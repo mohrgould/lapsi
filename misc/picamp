@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+from subprocess import Popen, PIPE
+from time import sleep, time
+
+source_host = 'arpi'
+source_dir = '/var/tmp/cam'
+dest_host = 'gould.io'
+dest_dir = 'www/prod/static'
+nowfile = 'now'
+
+while True:
+  started = time()
+
+  source = Popen(['ssh', source_host,
+    ('cat $(find {0} -type f -name "*.jpg" ' +
+        '| sort | tail -n 2 | head -n 1)').format(source_dir)],
+    stdout=PIPE)
+
+  dest = Popen(['ssh', dest_host,
+    'cat >> {0}/_{1}.jpg && mv {0}/_{1}.jpg {0}/{1}.jpg'.format(
+        dest_dir, nowfile)],
+    stdin=PIPE)
+
+  dest.communicate(source.communicate()[0])
+
+  elapsed = time() - started
+  print('published in {0}s'.format(elapsed))
+  sleep(max(0, 10-elapsed))

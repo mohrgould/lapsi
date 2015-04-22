@@ -1,0 +1,6 @@
+#!/bin/sh
+cmd=/home/pi/bin/syncam
+if ps -ef | grep -v grep | grep -v $(basename $0) | grep $cmd
+then exit 0
+else $cmd
+fi

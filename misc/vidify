@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+if [ -z "$1" ]
+then outfile=./day.mp4
+else outfile=$1
+fi
+
+workdir=/tmp/vidify.$$
+mkdir -p $workdir
+pwd=$(pwd)
+n=0
+for f in *.jpg
+do
+  ln -s $pwd/$f $workdir/$n.jpg
+  n=$((n+1))
+done
+ffmpeg -r 30 -i $workdir/%d.jpg -r 30 -c:v libx264 -f mp4 $workdir/$$.mp4
+mv $workdir/$$.mp4 "$outfile"
+rm -r $workdir

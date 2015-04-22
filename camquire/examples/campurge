@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Sync photos to remote host. When all photos are successfully copied, remove
+# locally-stored photos from all prior days.
+
+REMOTE=apps@example.com
+
+camdir=/var/tmp/cam
+# create '\/var\/tmp\/cam' for later removal via sed
+esc_camdir=$(echo $camdir | sed -e 's/\//\\&/g')
+
+hourdirs=$(find $camdir -type d | egrep '^(/[^/]+){7}' | sort -n)
+nhourdirs=$(echo "$hourdirs" | wc -l)
+
+remotedir=frames/$(hostname)
+
+if [ $nhourdirs -gt 1 ]
+then
+  rmdirs=$(echo "$hourdirs" | head -n $((nhourdirs-1)))
+  for rmdir in $rmdirs
+  do
+    remotesubdir=$remotedir$(echo $rmdir | sed -ne "s/^$esc_camdir//p")
+    rsync -av $rmdir $REMOTE:$(dirname $remotesubdir)/
+    if [ $? -eq 0 ]
+    then 
+      echo "Deleting $rmdir"
+      rm -r $rmdir
+    else
+      echo "badness"
+      exit 1
+    fi
+  done
+fi
+

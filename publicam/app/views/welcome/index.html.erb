@@ -1,0 +1,13 @@
+<h1>Hello</h1>
+
+<% @cameras.each do |camera| %>
+  <% if camera.last_frame %>
+  <p>
+    <%= link_to image_tag(camera.last_frame.thumb_url), camera.last_frame.url %>
+    <br>
+    <%= camera.last_frame.updated_at %>
+  </p>
+  <% end %>
+<% end %>
+
+<%= link_to 'Cameras', controller: 'cameras' %>

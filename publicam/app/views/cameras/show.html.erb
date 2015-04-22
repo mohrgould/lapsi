@@ -1,0 +1,15 @@
+<p>
+<strong>Name:</strong>
+  <%= @camera.name %>
+</p>
+
+<p>
+  <% if @camera.last_frame %>
+
+    <%= link_to image_tag(@camera.last_frame.thumb_url), @camera.last_frame.url %><br>
+    <%= @camera.last_frame.at %>
+  <% end %>
+</p>
+
+<%= link_to 'Back', cameras_path %>
+| <%= link_to 'Edit', edit_camera_path(@camera) %>

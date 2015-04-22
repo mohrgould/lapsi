@@ -1,0 +1,10 @@
+<table>
+  <% current_user.api_keys.each do |key| %>
+  <tr>
+    <td><%= key.access_token %></td>
+    <td><%= link_to 'Delete', api_key_path(key), method: :delete, data: { confirm: 'Are you sure?' } %></td>
+  </tr>
+  <% end %>
+</table>
+
+<%= link_to 'Generate key', new_user_api_key_path(current_user) %>

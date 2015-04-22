@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+from datetime import date, datetime, timedelta
+from ephem import city, localtime, Sun
+from glob import glob
+from os import path, symlink
+from pytz import utc
+from subprocess import call
+from time import gmtime, mktime
+from tempfile import mkdtemp
+
+camnodes = ['arpi', 'joe']
+pubhost = 'gould.io'
+pubdir = path.join('www', 'prod', 'static')
+publoc = ':'.join([pubhost, pubdir])
+obs = city('Seattle')
+fps=60
+
+ssh = path.join(path.sep, 'usr', 'bin', 'ssh')
+scp = path.join(path.sep, 'usr', 'bin', 'scp')
+ffmpeg = path.join(path.sep, 'usr', 'local', 'bin', 'ffmpeg')
+
+midnight = datetime.combine(date.today(), datetime.min.time())
+midnight_ts = mktime(midnight.timetuple())
+midnight_utc = datetime.fromtimestamp(midnight_ts, tz=utc)
+yesterday = midnight - timedelta(days=1)
+
+sun = Sun()
+obs.horizon = '-7.5'
+obs.date = midnight_utc
+sunrisets = int(mktime(localtime(obs.previous_rising(sun)).timetuple()))
+sunsetts = int(mktime(localtime(obs.previous_setting(sun)).timetuple()))
+
+for camnode in camnodes:
+  print('Node {0}'.format(camnode))
+  
+  yesterdir = path.join(path.sep, 'home', 'david', 'cam', camnode,
+      str(yesterday.year), 
+      str(yesterday.month).zfill(2), 
+      str(yesterday.day).zfill(2))
+
+  print('Selecting frames')
+  workdir = mkdtemp()
+  n = 0
+  for file in sorted(glob(path.join(yesterdir, '*.jpg'))):
+    filets = int(path.splitext(path.basename(file))[0])
+    if (filets > sunrisets and filets < sunsetts
+        and path.getsize(file) > 100000):
+      symlink(file, path.join(workdir, '{0}.jpg'.format(n)))
+      n = n + 1
+
+  print('Encoding')
+  outfile = path.join(yesterdir, 'day.mp4')
+  call([ffmpeg, '-y', '-r', str(fps), '-i', 
+      path.join(workdir, '%d.jpg'), '-r', str(fps), outfile])
+
+  if camnode == 'arpi':
+    vidname = 'yesterday'
+  else:
+    vidname = '{0}sterday'.format(camnode)
+
+  print('Copying')
+  call([scp, outfile, path.join(publoc, '_{0}.mp4'.format(vidname))])
+
+  print('Publishing')
+  call([ssh, pubhost, 'mv {0}/_{1}.mp4 {0}/{1}.mp4'.format(pubdir, vidname)])
